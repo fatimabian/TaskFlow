@@ -1,4 +1,5 @@
 import { MaterialIcons } from "@expo/vector-icons";
+import { useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -7,13 +8,20 @@ import {
   View,
 } from "react-native";
 export default function Index() {
+  const [task, setTask] = useState("");
+  const [tasks, setTasks] = useState([]);
   return (
     <View style={styles.container}>
       <View style={headerStyles.header}>
         <Text style={headerStyles.title}>TaskFlow</Text>
       </View>
       <View style={styles.inputRow}>
-        <TextInput style={styles.input} placeholder="Enter Task" />
+        <TextInput
+          style={styles.input}
+          placeholder="Enter Task"
+          value={task}
+          onChangeText={setTask}
+        />
         <TouchableOpacity style={styles.addButton}>
           <MaterialIcons name="add" size={22} color="#fff" />
         </TouchableOpacity>
