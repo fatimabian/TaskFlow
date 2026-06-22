@@ -7,26 +7,25 @@ export default function TaskItem({ item, onToggle, onDelete }) {
       onPress={() => onToggle(item)}
       onLongPress={() => onDelete(item.id)}
     >
-      <View style={styles.taskRow}>
+      <View style={styles.row}>
         <MaterialIcons
           name={item.completed ? "check-box" : "check-box-outline-blank"}
           size={20}
-          color={item.completed ? "#2E5BBA" : "#5A6472"}
         />
-        <Text style={styles.taskText}>{item.title}</Text>
+        <Text style={styles.text}>{item.title}</Text>
       </View>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  taskRow: {
+  row: {
     flexDirection: "row",
     alignItems: "center",
+    paddingVertical: 10,
     gap: 10,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
   },
-  taskText: { fontSize: 15 },
+  text: {
+    fontSize: 16,
+  },
 });

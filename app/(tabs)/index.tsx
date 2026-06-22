@@ -1,20 +1,26 @@
 import { useEffect, useState } from "react";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import {
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import Toast from "react-native-toast-message";
 import { supabase } from "../../lib/supabase";
 
-import TaskForm from "../../components/TaskForm";
+import AddTaskModal from "../../components/AddTaskModal";
 import TaskItem from "../../components/TaskItem";
 
 type Task = {
   id: string;
   title: string;
   completed: boolean;
-  created_at?: string;
 };
 
 export default function Index() {
-  const [task, setTask] = useState<string>("");
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [modalVisible, setModalVisible] = useState(false);
 
   // READ
   async function loadTasks() {
@@ -32,20 +38,26 @@ export default function Index() {
   }
 
   // CREATE
-  async function addTask() {
-    if (task.trim() === "") return;
-
+  async function addTask(title: string) {
     const { error } = await supabase
       .from("tasks")
-      .insert([{ title: task, completed: false }]);
+      .insert([{ title, completed: false }]);
 
     if (error) {
-      console.log("INSERT ERROR:", error.message);
+      Toast.show({
+        type: "error",
+        text1: "Error adding task",
+        text2: error.message,
+      });
       return;
     }
 
-    setTask("");
     loadTasks();
+
+    Toast.show({
+      type: "success",
+      text1: "Task added",
+    });
   }
 
   // UPDATE
@@ -56,7 +68,10 @@ export default function Index() {
       .eq("id", item.id);
 
     if (error) {
-      console.log("UPDATE ERROR:", error.message);
+      Toast.show({
+        type: "error",
+        text1: "Error updating task",
+      });
       return;
     }
 
@@ -68,11 +83,19 @@ export default function Index() {
     const { error } = await supabase.from("tasks").delete().eq("id", id);
 
     if (error) {
-      console.log("DELETE ERROR:", error.message);
+      Toast.show({
+        type: "error",
+        text1: "Error deleting task",
+      });
       return;
     }
 
     loadTasks();
+
+    Toast.show({
+      type: "success",
+      text1: "Task deleted",
+    });
   }
 
   useEffect(() => {
@@ -81,12 +104,18 @@ export default function Index() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>TaskFlow</Text>
-      </View>
+      {/* HEADER */}
+      <Text style={styles.title}>TaskFlow</Text>
 
-      <TaskForm task={task} setTask={setTask} onAdd={addTask} />
+      {/* ADD BUTTON */}
+      <TouchableOpacity
+        style={styles.addBtn}
+        onPress={() => setModalVisible(true)}
+      >
+        <Text style={{ color: "#fff", textAlign: "center" }}>+ Add Task</Text>
+      </TouchableOpacity>
 
+      {/* LIST */}
       <FlatList
         data={tasks}
         keyExtractor={(item) => item.id}
@@ -94,6 +123,19 @@ export default function Index() {
           <TaskItem item={item} onToggle={toggleTask} onDelete={deleteTask} />
         )}
       />
+
+      {/* MODAL */}
+      <AddTaskModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        onSubmit={(title: string) => {
+          addTask(title);
+          setModalVisible(false);
+        }}
+      />
+
+      {/* TOAST */}
+      <Toast />
     </View>
   );
 }
@@ -101,19 +143,19 @@ export default function Index() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 20,
+    padding: 20,
     backgroundColor: "#fff",
-  },
-  header: {
-    paddingTop: 50,
-    paddingBottom: 16,
-    marginBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
   },
   title: {
     fontSize: 28,
     fontWeight: "bold",
-    color: "#1F2A44",
+    marginTop: 50,
+    marginBottom: 10,
+  },
+  addBtn: {
+    backgroundColor: "#2E5BBA",
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 10,
   },
 });
