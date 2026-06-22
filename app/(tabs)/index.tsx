@@ -1,5 +1,5 @@
 import { MaterialIcons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -8,35 +8,94 @@ import {
   View,
 } from "react-native";
 
+import { supabase } from "../../lib/supabase";
+
 type Task = {
   id: string;
   title: string;
   completed: boolean;
+  created_at?: string;
 };
 
 export default function Index() {
   const [task, setTask] = useState<string>("");
   const [tasks, setTasks] = useState<Task[]>([]);
 
-  function handleAddTask() {
+  // READ (Load tasks)
+  async function loadTasks() {
+    const { data, error } = await supabase
+      .from("tasks")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.log("LOAD ERROR:", error);
+      return;
+    }
+
+    setTasks(data || []);
+  }
+
+  // CREATE (Add task)
+  async function handleAddTask() {
     if (task.trim() === "") return;
 
-    const newTask: Task = {
-      id: Date.now().toString(),
-      title: task,
-      completed: false,
-    };
+    const { error } = await supabase.from("tasks").insert([
+      {
+        title: task,
+        completed: false,
+      },
+    ]);
 
-    setTasks([...tasks, newTask]);
+    if (error) {
+      console.log("INSERT ERROR:", error);
+      return;
+    }
+
     setTask("");
+    loadTasks();
   }
+
+  // UPDATE (Toggle task)
+  async function toggleTask(item: Task) {
+    const { error } = await supabase
+      .from("tasks")
+      .update({ completed: !item.completed })
+      .eq("id", item.id);
+
+    if (error) {
+      console.log("UPDATE ERROR:", error);
+      return;
+    }
+
+    loadTasks();
+  }
+
+  // DELETE
+  async function deleteTask(id: string) {
+    const { error } = await supabase.from("tasks").delete().eq("id", id);
+
+    if (error) {
+      console.log("DELETE ERROR:", error);
+      return;
+    }
+
+    loadTasks();
+  }
+
+  // RUN ON MOUNT
+  useEffect(() => {
+    loadTasks();
+  }, []);
 
   return (
     <View style={styles.container}>
+      {/* HEADER */}
       <View style={headerStyles.header}>
         <Text style={headerStyles.title}>TaskFlow</Text>
       </View>
 
+      {/* INPUT */}
       <View style={styles.inputRow}>
         <TextInput
           style={styles.input}
@@ -45,28 +104,27 @@ export default function Index() {
           onChangeText={setTask}
         />
 
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={handleAddTask}
-        >
+        <TouchableOpacity style={styles.addButton} onPress={handleAddTask}>
           <MaterialIcons name="add" size={22} color="#fff" />
         </TouchableOpacity>
       </View>
 
+      {/* TASK LIST */}
       {tasks.map((item) => (
-        <View key={item.id} style={styles.taskRow}>
+        <TouchableOpacity
+          key={item.id}
+          style={styles.taskRow}
+          onPress={() => toggleTask(item)}
+          onLongPress={() => deleteTask(item.id)}
+        >
           <MaterialIcons
-            name={
-              item.completed
-                ? "check-box"
-                : "check-box-outline-blank"
-            }
+            name={item.completed ? "check-box" : "check-box-outline-blank"}
             size={20}
             color={item.completed ? "#2E5BBA" : "#5A6472"}
           />
 
           <Text style={styles.taskText}>{item.title}</Text>
-        </View>
+        </TouchableOpacity>
       ))}
     </View>
   );
