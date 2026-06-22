@@ -8,22 +8,26 @@ import {
   View,
 } from "react-native";
 
+type Task = {
+  id: string;
+  title: string;
+  completed: boolean;
+};
+
 export default function Index() {
-  const [task, setTask] = useState("");
-  const [tasks, setTasks] = useState([]);
+  const [task, setTask] = useState<string>("");
+  const [tasks, setTasks] = useState<Task[]>([]);
 
   function handleAddTask() {
     if (task.trim() === "") return;
 
-    setTasks([
-      ...tasks,
-      {
-        id: Date.now().toString(),
-        title: task,
-        completed: false,
-      },
-    ]);
+    const newTask: Task = {
+      id: Date.now().toString(),
+      title: task,
+      completed: false,
+    };
 
+    setTasks([...tasks, newTask]);
     setTask("");
   }
 
@@ -68,7 +72,7 @@ export default function Index() {
   );
 }
 
-// header styles
+// HEADER STYLES
 const headerStyles = StyleSheet.create({
   header: {
     paddingTop: 50,
@@ -84,7 +88,7 @@ const headerStyles = StyleSheet.create({
   },
 });
 
-// main styles
+// MAIN STYLES
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -121,4 +125,4 @@ const styles = StyleSheet.create({
   taskText: {
     fontSize: 15,
   },
-}); 
+});
