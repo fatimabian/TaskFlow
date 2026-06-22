@@ -1,14 +1,9 @@
-import { MaterialIcons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
-import {
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
-
+import { FlatList, StyleSheet, Text, View } from "react-native";
 import { supabase } from "../../lib/supabase";
+
+import TaskForm from "../../components/TaskForm";
+import TaskItem from "../../components/TaskItem";
 
 type Task = {
   id: string;
@@ -21,7 +16,7 @@ export default function Index() {
   const [task, setTask] = useState<string>("");
   const [tasks, setTasks] = useState<Task[]>([]);
 
-  // READ (Load tasks)
+  // READ
   async function loadTasks() {
     const { data, error } = await supabase
       .from("tasks")
@@ -29,26 +24,23 @@ export default function Index() {
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.log("LOAD ERROR:", error);
+      console.log("LOAD ERROR:", error.message);
       return;
     }
 
-    setTasks(data || []);
+    setTasks(data ?? []);
   }
 
-  // CREATE (Add task)
-  async function handleAddTask() {
+  // CREATE
+  async function addTask() {
     if (task.trim() === "") return;
 
-    const { error } = await supabase.from("tasks").insert([
-      {
-        title: task,
-        completed: false,
-      },
-    ]);
+    const { error } = await supabase
+      .from("tasks")
+      .insert([{ title: task, completed: false }]);
 
     if (error) {
-      console.log("INSERT ERROR:", error);
+      console.log("INSERT ERROR:", error.message);
       return;
     }
 
@@ -56,7 +48,7 @@ export default function Index() {
     loadTasks();
   }
 
-  // UPDATE (Toggle task)
+  // UPDATE
   async function toggleTask(item: Task) {
     const { error } = await supabase
       .from("tasks")
@@ -64,7 +56,7 @@ export default function Index() {
       .eq("id", item.id);
 
     if (error) {
-      console.log("UPDATE ERROR:", error);
+      console.log("UPDATE ERROR:", error.message);
       return;
     }
 
@@ -76,62 +68,42 @@ export default function Index() {
     const { error } = await supabase.from("tasks").delete().eq("id", id);
 
     if (error) {
-      console.log("DELETE ERROR:", error);
+      console.log("DELETE ERROR:", error.message);
       return;
     }
 
     loadTasks();
   }
 
-  // RUN ON MOUNT
   useEffect(() => {
     loadTasks();
   }, []);
 
   return (
     <View style={styles.container}>
-      {/* HEADER */}
-      <View style={headerStyles.header}>
-        <Text style={headerStyles.title}>TaskFlow</Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>TaskFlow</Text>
       </View>
 
-      {/* INPUT */}
-      <View style={styles.inputRow}>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter Task"
-          value={task}
-          onChangeText={setTask}
-        />
+      <TaskForm task={task} setTask={setTask} onAdd={addTask} />
 
-        <TouchableOpacity style={styles.addButton} onPress={handleAddTask}>
-          <MaterialIcons name="add" size={22} color="#fff" />
-        </TouchableOpacity>
-      </View>
-
-      {/* TASK LIST */}
-      {tasks.map((item) => (
-        <TouchableOpacity
-          key={item.id}
-          style={styles.taskRow}
-          onPress={() => toggleTask(item)}
-          onLongPress={() => deleteTask(item.id)}
-        >
-          <MaterialIcons
-            name={item.completed ? "check-box" : "check-box-outline-blank"}
-            size={20}
-            color={item.completed ? "#2E5BBA" : "#5A6472"}
-          />
-
-          <Text style={styles.taskText}>{item.title}</Text>
-        </TouchableOpacity>
-      ))}
+      <FlatList
+        data={tasks}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <TaskItem item={item} onToggle={toggleTask} onDelete={deleteTask} />
+        )}
+      />
     </View>
   );
 }
 
-// HEADER STYLES
-const headerStyles = StyleSheet.create({
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingHorizontal: 20,
+    backgroundColor: "#fff",
+  },
   header: {
     paddingTop: 50,
     paddingBottom: 16,
@@ -143,44 +115,5 @@ const headerStyles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "bold",
     color: "#1F2A44",
-  },
-});
-
-// MAIN STYLES
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: 20,
-    backgroundColor: "#fff",
-  },
-  inputRow: {
-    flexDirection: "row",
-    marginBottom: 20,
-  },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 10,
-    marginRight: 10,
-  },
-  addButton: {
-    backgroundColor: "#2E5BBA",
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  taskRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  taskText: {
-    fontSize: 15,
   },
 });
