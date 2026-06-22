@@ -1,7 +1,6 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import {
-  FlatList,
   StyleSheet,
   Text,
   TextInput,
@@ -11,11 +10,18 @@ import {
 
 import { supabase } from "../../lib/supabase";
 
-export default function Index() {
-  const [task, setTask] = useState("");
-  const [tasks, setTasks] = useState<any[]>([]);
+type Task = {
+  id: string;
+  title: string;
+  completed: boolean;
+  created_at?: string;
+};
 
-  // LOAD TASKS
+export default function Index() {
+  const [task, setTask] = useState<string>("");
+  const [tasks, setTasks] = useState<Task[]>([]);
+
+  // READ (Load tasks)
   async function loadTasks() {
     const { data, error } = await supabase
       .from("tasks")
@@ -30,16 +36,19 @@ export default function Index() {
     setTasks(data || []);
   }
 
-  // ADD TASK
-  async function addTask() {
+  // CREATE (Add task)
+  async function handleAddTask() {
     if (task.trim() === "") return;
 
-    const { error } = await supabase
-      .from("tasks")
-      .insert([{ title: task, completed: false }]);
+    const { error } = await supabase.from("tasks").insert([
+      {
+        title: task,
+        completed: false,
+      },
+    ]);
 
     if (error) {
-      console.log("ADD ERROR:", error);
+      console.log("INSERT ERROR:", error);
       return;
     }
 
@@ -47,8 +56,8 @@ export default function Index() {
     loadTasks();
   }
 
-  // TOGGLE TASK
-  async function toggleTask(item: any) {
+  // UPDATE (Toggle task)
+  async function toggleTask(item: Task) {
     const { error } = await supabase
       .from("tasks")
       .update({ completed: !item.completed })
@@ -62,7 +71,7 @@ export default function Index() {
     loadTasks();
   }
 
-  // DELETE TASK (LONG PRESS)
+  // DELETE
   async function deleteTask(id: string) {
     const { error } = await supabase.from("tasks").delete().eq("id", id);
 
@@ -74,7 +83,7 @@ export default function Index() {
     loadTasks();
   }
 
-  // RUN ON START
+  // RUN ON MOUNT
   useEffect(() => {
     loadTasks();
   }, []);
@@ -95,36 +104,33 @@ export default function Index() {
           onChangeText={setTask}
         />
 
-        <TouchableOpacity style={styles.addButton} onPress={addTask}>
+        <TouchableOpacity style={styles.addButton} onPress={handleAddTask}>
           <MaterialIcons name="add" size={22} color="#fff" />
         </TouchableOpacity>
       </View>
 
       {/* TASK LIST */}
-      <FlatList
-        data={tasks}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            onPress={() => toggleTask(item)}
-            onLongPress={() => deleteTask(item.id)}
-          >
-            <View style={styles.taskRow}>
-              <MaterialIcons
-                name={item.completed ? "check-box" : "check-box-outline-blank"}
-                size={20}
-                color={item.completed ? "#2E5BBA" : "#5A6472"}
-              />
-              <Text style={styles.taskText}>{item.title}</Text>
-            </View>
-          </TouchableOpacity>
-        )}
-      />
+      {tasks.map((item) => (
+        <TouchableOpacity
+          key={item.id}
+          style={styles.taskRow}
+          onPress={() => toggleTask(item)}
+          onLongPress={() => deleteTask(item.id)}
+        >
+          <MaterialIcons
+            name={item.completed ? "check-box" : "check-box-outline-blank"}
+            size={20}
+            color={item.completed ? "#2E5BBA" : "#5A6472"}
+          />
+
+          <Text style={styles.taskText}>{item.title}</Text>
+        </TouchableOpacity>
+      ))}
     </View>
   );
 }
 
-/* HEADER STYLES */
+// HEADER STYLES
 const headerStyles = StyleSheet.create({
   header: {
     paddingTop: 50,
@@ -140,7 +146,7 @@ const headerStyles = StyleSheet.create({
   },
 });
 
-/* MAIN STYLES */
+// MAIN STYLES
 const styles = StyleSheet.create({
   container: {
     flex: 1,
