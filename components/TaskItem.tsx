@@ -31,7 +31,7 @@ export default function TaskItem({ item, onToggle, onDelete }: Props) {
       >
         <MaterialIcons
           name={item.completed ? "check-box" : "check-box-outline-blank"}
-          size={20}
+          size={22}
           color={item.completed ? "#2E5BBA" : "#5A6472"}
         />
 
